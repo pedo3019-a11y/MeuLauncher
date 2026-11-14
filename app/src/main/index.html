@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meu Launcher</title>
+<style>
+  body{margin:0;padding:20px;background:#14161a;color:#eee;font-family:sans-serif}
+  h1{font-size:22px;margin:0 0 16px;color:#5ee07a}
+  label{display:block;margin:14px 0 6px;font-size:13px;color:#9aa}
+  input,select,button{width:100%;box-sizing:border-box;padding:14px;border-radius:10px;border:0;font-size:16px}
+  input,select{background:#23272e;color:#eee}
+  button{background:#2f9e4f;color:#fff;font-weight:bold;margin-top:12px}
+  button.sec{background:#2d3640}
+  #bar{height:10px;background:#23272e;border-radius:6px;margin-top:14px;overflow:hidden}
+  #fill{height:100%;width:0;background:#5ee07a}
+  #msg{margin-top:10px;font-size:13px;color:#9aa;min-height:18px}
+  .row{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px}
+  .row input{width:auto}
+</style>
+</head>
+<body>
+<h1>⛏ Meu Launcher</h1>
+
+<label>Nome de usuário (modo offline)</label>
+<input id="user" maxlength="16">
+
+<label>Versão</label>
+<select id="ver"><option>Carregando...</option></select>
+<div class="row"><input type="checkbox" id="snap"><span>Mostrar snapshots</span></div>
+
+<button class="sec" id="dl">Baixar versão</button>
+<div id="bar"><div id="fill"></div></div>
+<button id="play">Jogar</button>
+<div id="msg"></div>
+
+<script>
+let all = [];
+const $ = id => document.getElementById(id);
+
+$('user').value = Android.getUser();
+$('user').onchange = () => Android.setUser($('user').value.trim() || 'Steve');
+$('snap').onchange = render;
+$('dl').onclick = () => {
+  const v = all.find(x => x.id === $('ver').value);
+  if (!v) return;
+  $('msg').textContent = 'Baixando ' + v.id + '...';
+  Android.download(v.id, v.url);
+};
+$('play').onclick = () => Android.play($('ver').value);
+
+function render() {
+  const sel = $('ver');
+  sel.innerHTML = '';
+  all.filter(v => v.type === 'release' || $('snap').checked).forEach(v => {
+    const o = document.createElement('option');
+    o.value = v.id;
+    o.textContent = v.id + (Android.isInstalled(v.id) ? ' ✓' : '');
+    sel.appendChild(o);
+  });
+}
+function onVersions(json) { all = JSON.parse(json).versions; render(); }
+function onProgress(p) { $('fill').style.width = p + '%'; }
+function onDone(id) { $('msg').textContent = id + ' baixada!'; render(); $('ver').value = id; }
+function onError(e) { $('msg').textContent = 'Erro: ' + e; }
+
+Android.loadVersions();
+</script>
+</body>
+</html>
